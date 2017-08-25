@@ -10,6 +10,7 @@ TestApp::TestApp(int width, int height):
 
 TestApp::~TestApp() {
     vkDestroyDevice(logicalDevice, nullptr);
+    vkDestroySurfaceKHR(instance, surface, nullptr);
     DestroyDebugReportCallbackEXT(instance, debugCallback, nullptr);
     vkDestroyInstance(instance, nullptr);
     glfwDestroyWindow(window);
@@ -39,6 +40,7 @@ void TestApp::InitVulkan() {
     }
     CreateInstance();
     SetupDebugCallback();
+    CreateSurface();
     PickPhysicalDevice();
 
 }
@@ -73,14 +75,21 @@ void TestApp::CreateInstance() {
     }
 }
 
+void TestApp::CreateSurface() {
+    if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS) {
+        throw std::runtime_error("Could not create window surface");
+    }
+}
+
 void TestApp::PickPhysicalDevice() {
-    auto devices = GetDeviceCandidates(instance);
+    auto devices = GetDeviceCandidates(instance, surface);
 
     for (auto& device: devices) {
         if (device.QueuesComplete()) {
             if (device.CreateLogicalDevice()) {
                 physicalDevice = device.GetPhysicalDevice();
                 logicalDevice = device.GetLogicalDevice();
+                graphicsQueue = device.GetGraphicsQueue();
                 break;
             }
             else {

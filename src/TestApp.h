@@ -32,13 +32,16 @@ private:
   GLFWwindow*               window;
   VkInstance                instance;
   VkDebugReportCallbackEXT  debugCallback;
+  VkSurfaceKHR              surface;
   VkPhysicalDevice          physicalDevice;
   VkDevice                  logicalDevice;
+  VkQueue                   graphicsQueue;
 
   void          CreateWindow(int width, int height);
   void          InitVulkan();
   void          CreateInstance();
   void          SetupDebugCallback();
+  void          CreateSurface();
   void          PickPhysicalDevice();
   void          Mainloop();
 

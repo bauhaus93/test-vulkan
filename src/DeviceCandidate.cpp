@@ -1,6 +1,6 @@
 #include "DeviceCandidate.h"
 
-std::vector<DeviceCandidate> GetDeviceCandidates(VkInstance instance) {
+std::vector<DeviceCandidate> GetDeviceCandidates(VkInstance instance, VkSurfaceKHR surface) {
     uint32_t deviceCount = 0;
     std::vector<VkPhysicalDevice> devices;
     std::vector<DeviceCandidate> wrappedDevices;
@@ -11,14 +11,15 @@ std::vector<DeviceCandidate> GetDeviceCandidates(VkInstance instance) {
       vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
     }
     for (auto device: devices) {
-        wrappedDevices.emplace_back(device);
+        wrappedDevices.emplace_back(device, surface);
     }
     return wrappedDevices;
 }
 
-DeviceCandidate::DeviceCandidate(VkPhysicalDevice physicalDevice_):
+DeviceCandidate::DeviceCandidate(VkPhysicalDevice physicalDevice_, VkSurfaceKHR surface_):
     physicalDevice { physicalDevice_ },
     logicalDevice { VK_NULL_HANDLE },
+    surface { surface_ },
     graphicsIndex { -1 } {
     vkGetPhysicalDeviceFeatures(physicalDevice, &features);
     vkGetPhysicalDeviceProperties(physicalDevice, &properties);
@@ -39,24 +40,36 @@ void DeviceCandidate::LoadQueueFamilies() {
             if (qf.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
                 graphicsIndex = i;
             }
+            VkBool32 presentSupport = false;
+            vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, surface, &presentSupport);
+            if (presentSupport) {
+                presentIndex = i;
+            }
         }
         i++;
     }
 }
 
 bool DeviceCandidate::CreateLogicalDevice() {
-    VkDeviceQueueCreateInfo dqCreateInfo {};
+    std::vector<VkDeviceQueueCreateInfo> dqCreateInfo;
     VkDeviceCreateInfo createInfo {};
     VkPhysicalDeviceFeatures requestedFeatures { VK_FALSE };
+    std::set<int> uniqueQueueFamilies = { graphicsIndex, presentIndex };
     float queuePriority = 1.0f;
 
-    dqCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-    dqCreateInfo.queueFamilyIndex = graphicsIndex;
-    dqCreateInfo.queueCount = 1;
-    dqCreateInfo.pQueuePriorities = &queuePriority;
+    for (int qf: uniqueQueueFamilies) {
+        VkDeviceQueueCreateInfo dq {};
+        dq.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        dq.queueFamilyIndex = qf;
+        dq.queueCount = 1;
+        dq.pQueuePriorities = &queuePriority;
+        dqCreateInfo.push_back(dq);
+    }
+
 
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    createInfo.pQueueCreateInfos = &dqCreateInfo;
+    createInfo.queueCreateInfoCount = static_cast<uint32_t>(dqCreateInfo.size());
+    createInfo.pQueueCreateInfos = dqCreateInfo.data();
     createInfo.queueCreateInfoCount = 1;
     createInfo.pEnabledFeatures = &requestedFeatures;
     createInfo.enabledExtensionCount = 0;
@@ -80,8 +93,20 @@ VkDevice DeviceCandidate::GetLogicalDevice() const {
     return logicalDevice;
 }
 
+VkQueue DeviceCandidate::GetGraphicsQueue() const {
+    VkQueue queue;
+    vkGetDeviceQueue(logicalDevice, graphicsIndex, 0, &queue);
+    return queue;
+}
+
+VkQueue DeviceCandidate::GetPresentQueue() const {
+    VkQueue queue;
+    vkGetDeviceQueue(logicalDevice, presentIndex, 0, &queue);
+    return queue;
+}
+
 bool DeviceCandidate::QueuesComplete() const {
-    return graphicsIndex != -1;
+    return graphicsIndex != -1 && presentIndex != -1;
 }
 
 bool DeviceCandidate::HasGeometryShader() const {
