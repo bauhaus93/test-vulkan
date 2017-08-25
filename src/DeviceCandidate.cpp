@@ -105,6 +105,25 @@ VkQueue DeviceCandidate::GetPresentQueue() const {
     return queue;
 }
 
+bool DeviceCandidate::SupportsRequiredExtensions() const {
+    uint32_t extCount = 0;
+    std::vector<VkExtensionProperties> availableExtensions;
+
+    vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extCount, nullptr);
+    availableExtensions.resize(extCount);
+    vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extCount, availableExtensions.data());
+
+    unsigned int found = 0;
+    for (const auto& e: availableExtensions) {
+        if (std::find(deviceExtensions.begin(),
+                deviceExtensions.end(),
+                e.extensionName) != deviceExtensions.end()) {
+            found++;
+        }
+    }
+    return found == deviceExtensions.size();
+}
+
 bool DeviceCandidate::QueuesComplete() const {
     return graphicsIndex != -1 && presentIndex != -1;
 }

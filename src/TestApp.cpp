@@ -85,7 +85,7 @@ void TestApp::PickPhysicalDevice() {
     auto devices = GetDeviceCandidates(instance, surface);
 
     for (auto& device: devices) {
-        if (device.QueuesComplete()) {
+        if (device.QueuesComplete() && device.SupportsRequiredExtensions()) {
             if (device.CreateLogicalDevice()) {
                 physicalDevice = device.GetPhysicalDevice();
                 logicalDevice = device.GetLogicalDevice();
