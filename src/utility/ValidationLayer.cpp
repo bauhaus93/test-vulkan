@@ -25,17 +25,18 @@ bool CheckValidationLayerSupport() {
 }
 
 VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
-  VkDebugReportFlagsEXT flags,
-  VkDebugReportObjectTypeEXT objType,
-  uint64_t obj,
-  size_t location,
-  int32_t code,
-  const char* layerPrefix,
-  const char* msg,
-  void* userData) {
+    VkDebugReportFlagsEXT flags,
+    VkDebugReportObjectTypeEXT objType,
+    uint64_t obj,
+    size_t location,
+    int32_t code,
+    const char* layerPrefix,
+    const char* msg,
+    void* userData) {
 
-  std::cerr << "Validation layer: " << msg << std::endl;
-  return VK_FALSE;
+    WARN(msg);
+    
+    return VK_FALSE;
 }
 
 VkResult CreateDebugReportCallbackEXT(

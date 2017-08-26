@@ -3,12 +3,17 @@
 #include <vector>
 #include <set>
 #include <algorithm>
+#include <string>
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
 #include "utility/ValidationLayer.h"
-#include "utility/Extension.h"
+#include "logging/StdLogger.h"
+
+const std::vector<std::string> deviceExtensions = {
+    VK_KHR_SWAPCHAIN_EXTENSION_NAME
+};
 
 class DeviceCandidate {
 private:
@@ -35,6 +40,7 @@ public:
     VkDevice            GetLogicalDevice() const;
     VkQueue             GetGraphicsQueue() const;
     VkQueue             GetPresentQueue() const;
+    std::string         GetName() const;
 };
 
 std::vector<DeviceCandidate> GetDeviceCandidates(VkInstance instance, VkSurfaceKHR surface);

@@ -5,3 +5,4 @@ add_sources(
 )
 
 add_subdirectory(utility)
+add_subdirectory(logging)

@@ -15,6 +15,8 @@
 
 #include "utility/Extension.h"
 #include "utility/ValidationLayer.h"
+#include "utility/StringFormat.h"
+#include "logging/StdLogger.h"
 #include "DeviceCandidate.h"
 
 class TestApp {

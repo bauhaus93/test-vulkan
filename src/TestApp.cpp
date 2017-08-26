@@ -34,7 +34,7 @@ void TestApp::CreateWindow(int width, int height) {
 }
 
 void TestApp::InitVulkan() {
-
+    INFO("Initializing Vulkan");
     if (enableValidationLayers && !CheckValidationLayerSupport()) {
         throw std::runtime_error("Requested validation layers not available");
     }
@@ -42,7 +42,6 @@ void TestApp::InitVulkan() {
     SetupDebugCallback();
     CreateSurface();
     PickPhysicalDevice();
-
 }
 
 void TestApp::CreateInstance() {
@@ -90,12 +89,16 @@ void TestApp::PickPhysicalDevice() {
                 physicalDevice = device.GetPhysicalDevice();
                 logicalDevice = device.GetLogicalDevice();
                 graphicsQueue = device.GetGraphicsQueue();
+                INFO(StringFormat("Used device: %s", device.GetName().c_str()));
                 break;
             }
             else {
                 throw std::runtime_error("Could not create logical device");
             }
         }
+    }
+    if (physicalDevice == VK_NULL_HANDLE) {
+        throw std::runtime_error("Could not find appropriate device");
     }
 }
 

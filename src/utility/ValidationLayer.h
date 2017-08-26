@@ -8,6 +8,8 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#include "logging/StdLogger.h"
+
 #ifdef NDEBUG
   const bool enableValidationLayers = false;
 #else

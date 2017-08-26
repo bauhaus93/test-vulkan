@@ -105,6 +105,10 @@ VkQueue DeviceCandidate::GetPresentQueue() const {
     return queue;
 }
 
+std::string DeviceCandidate::GetName() const {
+    return std::string(properties.deviceName);
+}
+
 bool DeviceCandidate::SupportsRequiredExtensions() const {
     uint32_t extCount = 0;
     std::vector<VkExtensionProperties> availableExtensions;
