@@ -10,7 +10,7 @@
 #include <string>
 #include <memory>
 
-namespace vulkan::logging {
+namespace logging {
 
 enum class LogLevel {
     DEBUG = 0,

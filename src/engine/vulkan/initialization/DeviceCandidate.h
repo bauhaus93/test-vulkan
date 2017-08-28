@@ -8,10 +8,12 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-#include "utility/ValidationLayer.h"
+#include "ValidationLayer.h"
 #include "logging/StdLogger.h"
 
-const std::vector<std::string> deviceExtensions = {
+namespace engine::vulkan {
+
+const std::vector<std::string> deviceExtensions {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
 
@@ -20,16 +22,22 @@ private:
     VkPhysicalDevice                        physicalDevice;
     VkDevice                                logicalDevice;
     VkSurfaceKHR                            surface;
+    VkSurfaceCapabilitiesKHR                surfaceCapabilities;
+    std::vector<VkSurfaceFormatKHR>         surfaceFormats;
+    std::vector<VkPresentModeKHR>           presentModes;
     VkPhysicalDeviceFeatures                features;
     VkPhysicalDeviceProperties              properties;
+
     int                                     graphicsIndex;
     int                                     presentIndex;
 
     void                                    LoadQueueFamilies();
+    void                                    LoadSwapChainDetails();
 public:
 
                         DeviceCandidate(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface_);
 
+    bool                SwapChainSuitable() const;
     bool                SupportsRequiredExtensions() const;
     bool                QueuesComplete() const;
     bool                HasGeometryShader() const;
@@ -44,3 +52,5 @@ public:
 };
 
 std::vector<DeviceCandidate> GetDeviceCandidates(VkInstance instance, VkSurfaceKHR surface);
+
+}

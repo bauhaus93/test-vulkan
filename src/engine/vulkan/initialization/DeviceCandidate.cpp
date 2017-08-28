@@ -1,5 +1,7 @@
 #include "DeviceCandidate.h"
 
+namespace engine::vulkan {
+
 std::vector<DeviceCandidate> GetDeviceCandidates(VkInstance instance, VkSurfaceKHR surface) {
     uint32_t deviceCount = 0;
     std::vector<VkPhysicalDevice> devices;
@@ -20,10 +22,12 @@ DeviceCandidate::DeviceCandidate(VkPhysicalDevice physicalDevice_, VkSurfaceKHR 
     physicalDevice { physicalDevice_ },
     logicalDevice { VK_NULL_HANDLE },
     surface { surface_ },
-    graphicsIndex { -1 } {
+    graphicsIndex { -1 },
+    presentIndex { -1 } {
     vkGetPhysicalDeviceFeatures(physicalDevice, &features);
     vkGetPhysicalDeviceProperties(physicalDevice, &properties);
     LoadQueueFamilies();
+    LoadSwapChainDetails();
 }
 
 void DeviceCandidate::LoadQueueFamilies() {
@@ -47,6 +51,24 @@ void DeviceCandidate::LoadQueueFamilies() {
             }
         }
         i++;
+    }
+}
+
+void DeviceCandidate::LoadSwapChainDetails() {
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &surfaceCapabilities);
+
+    uint32_t formatCount;
+    vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, nullptr);
+    if (formatCount != 0) {
+        surfaceFormats.resize(formatCount);
+        vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, surfaceFormats.data());
+    }
+
+    uint32_t presentModeCount;
+    vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, nullptr);
+    if (presentModeCount != 0) {
+        presentModes.resize(presentModeCount);
+        vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, presentModes.data());
     }
 }
 
@@ -128,8 +150,13 @@ bool DeviceCandidate::SupportsRequiredExtensions() const {
     return found == deviceExtensions.size();
 }
 
+
 bool DeviceCandidate::QueuesComplete() const {
     return graphicsIndex != -1 && presentIndex != -1;
+}
+
+bool DeviceCandidate::SwapChainSuitable() const {
+    return SupportsRequiredExtensions() && !surfaceFormats.empty() && !presentModes.empty();
 }
 
 bool DeviceCandidate::HasGeometryShader() const {
@@ -138,4 +165,6 @@ bool DeviceCandidate::HasGeometryShader() const {
 
 bool DeviceCandidate::HasDiscreteGPU() const {
     return properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
+}
+
 }

@@ -1,5 +1,7 @@
 #include "Extension.h"
 
+namespace engine::vulkan {
+
 void ListAvailableVulkanExtensions() {
   uint32_t extCount = 0;
 
@@ -29,4 +31,6 @@ std::vector<const char*> GetRequiredExtensions() {
   }
 
   return extensions;
+}
+
 }

@@ -5,7 +5,7 @@
 
 #include "Logger.h"
 
-namespace vulkan::logging {
+namespace logging {
 
 class FileLogger: public Logger {
 

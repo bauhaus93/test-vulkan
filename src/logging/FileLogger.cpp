@@ -1,6 +1,6 @@
 #include "FileLogger.h"
 
-namespace vulkan::logging {
+namespace logging {
 
 FileLogger::FileLogger(LogLevel logLevel_, const std::string& filename):
     Logger(logLevel_),

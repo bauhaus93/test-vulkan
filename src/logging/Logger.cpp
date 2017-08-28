@@ -1,6 +1,6 @@
 #include "Logger.h"
 
-namespace vulkan::logging {
+namespace logging {
 
 Logger::Logger(LogLevel logLevel_):
     logLevel { logLevel_ },

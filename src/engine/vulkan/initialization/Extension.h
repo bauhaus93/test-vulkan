@@ -10,5 +10,9 @@
 #include "ValidationLayer.h"
 #include "logging/StdLogger.h"
 
+namespace engine::vulkan {
+
 void ListAvailableVulkanExtensions();
 std::vector<const char*> GetRequiredExtensions();
+
+}
