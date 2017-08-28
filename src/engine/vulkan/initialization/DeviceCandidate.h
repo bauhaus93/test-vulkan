@@ -9,6 +9,7 @@
 #include <GLFW/glfw3.h>
 
 #include "ValidationLayer.h"
+#include "SwapChain.h"
 #include "logging/StdLogger.h"
 
 namespace engine::vulkan {

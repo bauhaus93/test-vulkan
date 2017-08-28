@@ -9,6 +9,7 @@
 #include "initialization/ValidationLayer.h"
 #include "initialization/DeviceCandidate.h"
 #include "initialization/Extension.h"
+#include "initialization/SwapChain.h"
 
 namespace engine::vulkan {
 
