@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
@@ -25,6 +27,7 @@ private:
     void                        SetupDebugCallback();
     void                        CreateSurface(GLFWwindow* window);
     void                        PickPhysicalDevice();
+    void                        LoadSwapchainImages();
 
     VkInstance                  instance;
     VkDebugReportCallbackEXT    debugCallback;
@@ -32,11 +35,11 @@ private:
     VkPhysicalDevice            physicalDevice;
     VkDevice                    logicalDevice;
     VkQueue                     graphicsQueue;
-
-
-
-
-
+    VkQueue                     presentQueue;
+    VkSwapchainKHR              swapchain;
+    std::vector<VkImage>        swapchainImages;
+    VkFormat                    swapchainImageFormat;
+    VkExtent2D                  swapchainImageExtent;
 
 };
 

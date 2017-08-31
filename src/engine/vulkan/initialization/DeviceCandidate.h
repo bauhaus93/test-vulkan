@@ -4,6 +4,7 @@
 #include <set>
 #include <algorithm>
 #include <string>
+#include <stdexcept>
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -11,6 +12,7 @@
 #include "ValidationLayer.h"
 #include "SwapChain.h"
 #include "logging/StdLogger.h"
+#include "utility/StringFormat.h"
 
 namespace engine::vulkan {
 
@@ -23,6 +25,7 @@ private:
     VkPhysicalDevice                        physicalDevice;
     VkDevice                                logicalDevice;
     VkSurfaceKHR                            surface;
+    VkSwapchainKHR                          swapchain;
     VkSurfaceCapabilitiesKHR                surfaceCapabilities;
     std::vector<VkSurfaceFormatKHR>         surfaceFormats;
     std::vector<VkPresentModeKHR>           presentModes;
@@ -33,22 +36,24 @@ private:
     int                                     presentIndex;
 
     void                                    LoadQueueFamilies();
-    void                                    LoadSwapChainDetails();
+    void                                    LoadSwapchainDetails();
 public:
 
                         DeviceCandidate(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface_);
 
-    bool                SwapChainSuitable() const;
+    bool                SwapchainSuitable() const;
     bool                SupportsRequiredExtensions() const;
     bool                QueuesComplete() const;
     bool                HasGeometryShader() const;
     bool                HasDiscreteGPU() const;
-    bool                CreateLogicalDevice();
+    void                CreateLogicalDevice();
+    void                CreateSwapchain();
 
     VkPhysicalDevice    GetPhysicalDevice() const;
     VkDevice            GetLogicalDevice() const;
     VkQueue             GetGraphicsQueue() const;
     VkQueue             GetPresentQueue() const;
+    VkSwapchainKHR      GetSwapchain() const;
     std::string         GetName() const;
 };
 

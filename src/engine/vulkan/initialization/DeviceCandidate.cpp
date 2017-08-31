@@ -22,12 +22,13 @@ DeviceCandidate::DeviceCandidate(VkPhysicalDevice physicalDevice_, VkSurfaceKHR 
     physicalDevice { physicalDevice_ },
     logicalDevice { VK_NULL_HANDLE },
     surface { surface_ },
+    swapchain { VK_NULL_HANDLE },
     graphicsIndex { -1 },
     presentIndex { -1 } {
     vkGetPhysicalDeviceFeatures(physicalDevice, &features);
     vkGetPhysicalDeviceProperties(physicalDevice, &properties);
     LoadQueueFamilies();
-    LoadSwapChainDetails();
+    LoadSwapchainDetails();
 }
 
 void DeviceCandidate::LoadQueueFamilies() {
@@ -54,7 +55,7 @@ void DeviceCandidate::LoadQueueFamilies() {
     }
 }
 
-void DeviceCandidate::LoadSwapChainDetails() {
+void DeviceCandidate::LoadSwapchainDetails() {
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &surfaceCapabilities);
 
     uint32_t formatCount;
@@ -72,14 +73,14 @@ void DeviceCandidate::LoadSwapChainDetails() {
     }
 }
 
-void DeviceCandidate::CreateSwapChain() {
-    VkSurfaceFormatKHR surfaceFmt { ChooseSurfaceFormat(surfaceFormats) };
+void DeviceCandidate::CreateSwapchain() {
+    VkSurfaceFormatKHR surfaceFmt { ChooseSwapSurfaceFormat(surfaceFormats) };
     VkPresentModeKHR presentMode { ChooseSwapPresentMode(presentModes) };
-    VkExtent2D extent { ChooseSwapExtent(capabilities, 800, 600) };
+    VkExtent2D extent { ChooseSwapExtent(surfaceCapabilities, 800, 600) };
 
-    uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
-    if (capabilities.maxImageCount > 0 && imageCount > capabilities.maxImageCount) {
-        imageCount = capabilities.maxImageCount;
+    uint32_t imageCount = surfaceCapabilities.minImageCount + 1;
+    if (surfaceCapabilities.maxImageCount > 0 && imageCount > surfaceCapabilities.maxImageCount) {
+        imageCount = surfaceCapabilities.maxImageCount;
     }
 
     VkSwapchainCreateInfoKHR createInfo {};
@@ -91,11 +92,36 @@ void DeviceCandidate::CreateSwapChain() {
     createInfo.imageExtent = extent;
     createInfo.imageArrayLayers = 1;
     createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-    
+
+    uint32_t familyIndices[] = {
+        static_cast<uint32_t>(graphicsIndex),
+        static_cast<uint32_t>(presentIndex) };
+
+    if (graphicsIndex != presentIndex) {
+        createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+        createInfo.queueFamilyIndexCount = 2;
+        createInfo.pQueueFamilyIndices = familyIndices;
+    }
+    else {
+        createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+        createInfo.queueFamilyIndexCount = 0;
+        createInfo.pQueueFamilyIndices = nullptr;
+    }
+
+    createInfo.preTransform = surfaceCapabilities.currentTransform;
+    createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+    createInfo.presentMode = presentMode;
+    createInfo.clipped = VK_TRUE;
+    createInfo.oldSwapchain = VK_NULL_HANDLE;
+
+    if (vkCreateSwapchainKHR(logicalDevice, &createInfo, nullptr, &swapchain) != VK_SUCCESS) {
+        throw std::runtime_error("Could not create swapchain");
+    }
+    INFO("Created swapchain");
 }
 
 
-bool DeviceCandidate::CreateLogicalDevice() {
+void DeviceCandidate::CreateLogicalDevice() {
     std::vector<VkDeviceQueueCreateInfo> dqCreateInfo;
     VkDeviceCreateInfo createInfo {};
     VkPhysicalDeviceFeatures requestedFeatures { VK_FALSE };
@@ -111,13 +137,19 @@ bool DeviceCandidate::CreateLogicalDevice() {
         dqCreateInfo.push_back(dq);
     }
 
-
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     createInfo.queueCreateInfoCount = static_cast<uint32_t>(dqCreateInfo.size());
     createInfo.pQueueCreateInfos = dqCreateInfo.data();
     createInfo.queueCreateInfoCount = 1;
     createInfo.pEnabledFeatures = &requestedFeatures;
     createInfo.enabledExtensionCount = 0;
+
+    std::vector<const char*> extPtrs { deviceExtensions.size() };
+    for (size_t i = 0; i < deviceExtensions.size(); i++) {
+        extPtrs[i] = deviceExtensions[i].c_str();
+    }
+    createInfo.enabledExtensionCount = static_cast<uint32_t>(extPtrs.size());
+    createInfo.ppEnabledExtensionNames = extPtrs.data();
 
     if (enableValidationLayers) {
         createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
@@ -126,8 +158,10 @@ bool DeviceCandidate::CreateLogicalDevice() {
     else {
         createInfo.enabledLayerCount = 0;
     }
-
-    return vkCreateDevice(physicalDevice, &createInfo, nullptr, &logicalDevice) == VK_SUCCESS;
+    if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &logicalDevice) != VK_SUCCESS) {
+        throw std::runtime_error("Could not create logical device");
+    }
+    INFO("Created logical device");
 }
 
 VkPhysicalDevice DeviceCandidate::GetPhysicalDevice() const {
@@ -148,6 +182,10 @@ VkQueue DeviceCandidate::GetPresentQueue() const {
     VkQueue queue;
     vkGetDeviceQueue(logicalDevice, presentIndex, 0, &queue);
     return queue;
+}
+
+VkSwapchainKHR DeviceCandidate::GetSwapchain() const {
+    return swapchain;
 }
 
 std::string DeviceCandidate::GetName() const {
@@ -178,7 +216,7 @@ bool DeviceCandidate::QueuesComplete() const {
     return graphicsIndex != -1 && presentIndex != -1;
 }
 
-bool DeviceCandidate::SwapChainSuitable() const {
+bool DeviceCandidate::SwapchainSuitable() const {
     return SupportsRequiredExtensions() && !surfaceFormats.empty() && !presentModes.empty();
 }
 

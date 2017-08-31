@@ -29,10 +29,13 @@ Vulkan::Vulkan(GLFWwindow* window):
     SetupDebugCallback();
     CreateSurface(window);
     PickPhysicalDevice();
+    LoadSwapchainImages();
 }
 
 Vulkan::~Vulkan() {
     INFO("Destroying vulkan");
+
+    vkDestroySwapchainKHR(logicalDevice, swapchain, nullptr);
     vkDestroyDevice(logicalDevice, nullptr);
     vkDestroySurfaceKHR(instance, surface, nullptr);
     DestroyDebugReportCallbackEXT(instance, debugCallback, nullptr);
@@ -94,16 +97,14 @@ void Vulkan::PickPhysicalDevice() {
 
     for (auto& device: devices) {
         if (device.QueuesComplete() && device.SupportsRequiredExtensions()) {
-            if (device.CreateLogicalDevice()) {
-                physicalDevice = device.GetPhysicalDevice();
-                logicalDevice = device.GetLogicalDevice();
-                graphicsQueue = device.GetGraphicsQueue();
-                INFO(StringFormat("Used device: %s", device.GetName().c_str()));
-                break;
-            }
-            else {
-                throw std::runtime_error("Could not create logical device");
-            }
+            device.CreateLogicalDevice();
+            device.CreateSwapchain();
+            physicalDevice = device.GetPhysicalDevice();
+            logicalDevice = device.GetLogicalDevice();
+            graphicsQueue = device.GetGraphicsQueue();
+            presentQueue = device.GetPresentQueue();
+            swapchain = device.GetSwapchain();
+            INFO(StringFormat("Used device: %s", device.GetName().c_str()));
         }
     }
     if (physicalDevice == VK_NULL_HANDLE) {
@@ -111,9 +112,13 @@ void Vulkan::PickPhysicalDevice() {
     }
 }
 
-void Vulkan::CreateSwapChain() {
-    
+void Vulkan::LoadSwapchainImages() {
+    uint32_t imageCount;
+    vkGetSwapchainImagesKHR(logicalDevice, swapchain, &imageCount, nullptr);
+    swapchainImages.resize(imageCount);
+    vkGetSwapchainImagesKHR(logicalDevice, swapchain, &imageCount, swapchainImages.data());
 }
+
 
 
 }
