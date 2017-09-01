@@ -18,8 +18,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
 }
 
 Vulkan::Vulkan(GLFWwindow* window):
-    physicalDevice { VK_NULL_HANDLE },
-    logicalDevice { VK_NULL_HANDLE } {
+    device { nullptr }{
 
     INFO("Initializing vulkan");
     if (enableValidationLayers && !CheckValidationLayerSupport()) {
@@ -28,18 +27,15 @@ Vulkan::Vulkan(GLFWwindow* window):
     CreateInstance();
     SetupDebugCallback();
     CreateSurface(window);
-    PickPhysicalDevice();
-    LoadSwapchainImages();
+    ChooseDevice();
 }
 
 Vulkan::~Vulkan() {
-    INFO("Destroying vulkan");
-
-    vkDestroySwapchainKHR(logicalDevice, swapchain, nullptr);
-    vkDestroyDevice(logicalDevice, nullptr);
+    device = nullptr;
     vkDestroySurfaceKHR(instance, surface, nullptr);
     DestroyDebugReportCallbackEXT(instance, debugCallback, nullptr);
     vkDestroyInstance(instance, nullptr);
+    INFO("Destroyed vulkan");
 }
 
 void Vulkan::CreateInstance() {
@@ -92,32 +88,24 @@ void Vulkan::CreateSurface(GLFWwindow* window) {
     }
 }
 
-void Vulkan::PickPhysicalDevice() {
-    auto devices = GetDeviceCandidates(instance, surface);
+void Vulkan::ChooseDevice() {
+    auto devices = GetDevices(instance, surface);
 
-    for (auto& device: devices) {
-        if (device.QueuesComplete() && device.SupportsRequiredExtensions()) {
-            device.CreateLogicalDevice();
-            device.CreateSwapchain();
-            physicalDevice = device.GetPhysicalDevice();
-            logicalDevice = device.GetLogicalDevice();
-            graphicsQueue = device.GetGraphicsQueue();
-            presentQueue = device.GetPresentQueue();
-            swapchain = device.GetSwapchain();
-            INFO(StringFormat("Used device: %s", device.GetName().c_str()));
+    for (auto& currDev: devices) {
+        if (currDev.QueuesComplete() && currDev.SupportsRequiredExtensions()) {
+            device = std::make_unique<Device>(std::move(currDev));
+            device->LoadLogicalDevice();
+            device->LoadSwapChain(surface);
+            INFO(StringFormat("Used device: %s", device->GetName().c_str()));
+            break;
         }
     }
-    if (physicalDevice == VK_NULL_HANDLE) {
+    if (device == nullptr) {
         throw std::runtime_error("Could not find appropriate device");
     }
 }
 
-void Vulkan::LoadSwapchainImages() {
-    uint32_t imageCount;
-    vkGetSwapchainImagesKHR(logicalDevice, swapchain, &imageCount, nullptr);
-    swapchainImages.resize(imageCount);
-    vkGetSwapchainImagesKHR(logicalDevice, swapchain, &imageCount, swapchainImages.data());
-}
+
 
 
 
