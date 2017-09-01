@@ -3,7 +3,7 @@
 #include <vector>
 #include <memory>
 
-#define GLFW_INCLUDE_VULKAN
+#include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
 
 #include "logging/StdLogger.h"
