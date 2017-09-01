@@ -6,3 +6,4 @@ add_sources(
 )
 
 add_subdirectory(initialization)
+add_subdirectory(shaders)

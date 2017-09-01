@@ -11,6 +11,7 @@ SwapChain::SwapChain(VkPhysicalDevice physicalDevice, const VkDevice logicalDevi
     LoadSwapExent(physicalDevice, surface, 800, 600);
     LoadSwapChain(physicalDevice, surface, graphicsIndex, presentIndex);
     LoadImages();
+    LoadImageViews();
     INFO("Created swapchain");
 }
 
@@ -27,6 +28,11 @@ SwapChain::SwapChain(SwapChain&& other):
 }
 
 SwapChain::~SwapChain() {
+
+    for(auto imageView: imageViews) {
+        vkDestroyImageView(logicalDevice, imageView, nullptr);
+    }
+
     if (swapChain != VK_NULL_HANDLE) {
         vkDestroySwapchainKHR(logicalDevice, swapChain, nullptr);
         INFO("Destroyed swapchain");
@@ -147,6 +153,35 @@ void SwapChain::LoadImages() {
     vkGetSwapchainImagesKHR(logicalDevice, swapChain, &imageCount, nullptr);
     images.resize(imageCount);
     vkGetSwapchainImagesKHR(logicalDevice, swapChain, &imageCount, images.data());
+}
+
+void SwapChain::LoadImageViews() {
+    for(size_t i = 0; i < images.size(); i++) {
+        VkImageViewCreateInfo createInfo {};
+        VkImageView imageView = VK_NULL_HANDLE;
+        createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        createInfo.image = images[i];
+        createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        createInfo.format = imageFormat.format;
+
+        createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+        createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+        createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+        createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+
+        createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        createInfo.subresourceRange.baseMipLevel = 0;
+        createInfo.subresourceRange.levelCount = 1;
+        createInfo.subresourceRange.baseArrayLayer = 0;
+        createInfo.subresourceRange.layerCount = 1;
+        if (vkCreateImageView(logicalDevice, &createInfo, nullptr, &imageView) != VK_SUCCESS) {
+            throw std::runtime_error("Could not create image view");
+        }
+        imageViews.push_back(imageView);
+
+    }
+
+
 }
 
 }

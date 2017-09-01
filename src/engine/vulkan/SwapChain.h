@@ -23,13 +23,14 @@ public:
 
 
 private:
-    VkSwapchainKHR          swapChain;
-    const VkDevice          logicalDevice;
-    VkSurfaceFormatKHR      imageFormat;
-    VkPresentModeKHR        presentMode;
-    VkExtent2D              imageExtent;
+    VkSwapchainKHR              swapChain;
+    const VkDevice              logicalDevice;
+    VkSurfaceFormatKHR          imageFormat;
+    VkPresentModeKHR            presentMode;
+    VkExtent2D                  imageExtent;
 
-    std::vector<VkImage>    images;
+    std::vector<VkImage>        images;
+    std::vector<VkImageView>    imageViews;
 
 
     void                LoadSurfaceFormat(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface);
@@ -37,6 +38,7 @@ private:
     void                LoadSwapExent(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, uint32_t width, uint32_t height);
     void                LoadSwapChain(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, int graphicsIndex, int presentIndex);
     void                LoadImages();
+    void                LoadImageViews();
 
 };
 
