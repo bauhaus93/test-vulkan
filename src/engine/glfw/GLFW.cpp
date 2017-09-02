@@ -15,9 +15,9 @@ GLFW::GLFW(int width_, int height_, const std::string& windowTitle):
 }
 
 GLFW::~GLFW() {
-    INFO("Destroying glfw");
     glfwDestroyWindow(window);
     glfwTerminate();
+    INFO("Destroyed glfw");
 }
 
 GLFWwindow* GLFW::GetWindow() {

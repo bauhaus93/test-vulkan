@@ -21,7 +21,6 @@ std::vector<Device> GetDevices(VkInstance instance, VkSurfaceKHR surface) {
 Device::Device(VkPhysicalDevice physicalDevice_, VkSurfaceKHR surface):
     physicalDevice { physicalDevice_ },
     logicalDevice { VK_NULL_HANDLE },
-    swapchain { nullptr },
     graphicsQueue { },
     presentQueue { } {
 
@@ -31,18 +30,15 @@ Device::Device(VkPhysicalDevice physicalDevice_, VkSurfaceKHR surface):
 Device::Device(Device&& other):
     physicalDevice { other.physicalDevice},
     logicalDevice { other.logicalDevice },
-    swapchain { std::move(other.swapchain) },
     graphicsQueue { other.graphicsQueue },
     presentQueue { other.presentQueue } {
 
     other.physicalDevice = VK_NULL_HANDLE;
     other.logicalDevice = VK_NULL_HANDLE;
-    other.swapchain = nullptr;
 }
 
 Device::~Device() {
     if (logicalDevice != VK_NULL_HANDLE) {
-        swapchain = nullptr;
         vkDestroyDevice(logicalDevice, nullptr);
         INFO("Destroyed logical device");
     }
@@ -133,8 +129,8 @@ void Device::LoadLogicalDevice() {
 
 }
 
-void Device::LoadSwapChain(VkSurfaceKHR surface) {
-    swapchain = std::make_unique<SwapChain>(physicalDevice,
+std::unique_ptr<SwapChain> Device::CreateSwapChain(VkSurfaceKHR surface) {
+    return std::make_unique<SwapChain>(physicalDevice,
         logicalDevice,
         surface,
         graphicsQueue.GetIndex(),

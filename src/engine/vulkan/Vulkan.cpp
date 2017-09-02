@@ -18,19 +18,24 @@ VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
 }
 
 Vulkan::Vulkan(GLFWwindow* window):
-    device { nullptr }{
+    device { nullptr },
+    pipeline { nullptr }{
 
     INFO("Initializing vulkan");
     if (enableValidationLayers && !CheckValidationLayerSupport()) {
         throw std::runtime_error("Requested validation layers not available");
     }
-    CreateInstance();
+    LoadInstance();
     SetupDebugCallback();
-    CreateSurface(window);
-    ChooseDevice();
+    LoadSurface(window);
+    LoadDevice();
+    LoadSwapChain();
+    LoadPipeline();
 }
 
 Vulkan::~Vulkan() {
+    pipeline = nullptr;
+    swapchain = nullptr;
     device = nullptr;
     vkDestroySurfaceKHR(instance, surface, nullptr);
     DestroyDebugReportCallbackEXT(instance, debugCallback, nullptr);
@@ -38,7 +43,7 @@ Vulkan::~Vulkan() {
     INFO("Destroyed vulkan");
 }
 
-void Vulkan::CreateInstance() {
+void Vulkan::LoadInstance() {
     VkApplicationInfo appInfo {};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     appInfo.pApplicationName = "Test-Vulkan";
@@ -82,20 +87,19 @@ void Vulkan::SetupDebugCallback() {
     }
 }
 
-void Vulkan::CreateSurface(GLFWwindow* window) {
+void Vulkan::LoadSurface(GLFWwindow* window) {
     if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS) {
         throw std::runtime_error("Could not create window surface");
     }
 }
 
-void Vulkan::ChooseDevice() {
+void Vulkan::LoadDevice() {
     auto devices = GetDevices(instance, surface);
 
     for (auto& currDev: devices) {
         if (currDev.QueuesComplete() && currDev.SupportsRequiredExtensions()) {
             device = std::make_unique<Device>(std::move(currDev));
             device->LoadLogicalDevice();
-            device->LoadSwapChain(surface);
             INFO(StringFormat("Used device: %s", device->GetName().c_str()));
             break;
         }
@@ -105,8 +109,15 @@ void Vulkan::ChooseDevice() {
     }
 }
 
+void Vulkan::LoadSwapChain() {
+    swapchain = device->CreateSwapChain(surface);
+}
 
-
+void Vulkan::LoadPipeline() {
+    pipeline = std::make_unique<Pipeline>(device->GetLogicalDevice(),
+        swapchain->GetImageExtent(),
+        swapchain->GetImageFormat());
+}
 
 
 }

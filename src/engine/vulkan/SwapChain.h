@@ -13,13 +13,16 @@ class SwapChain {
 
 public:
 
-                        SwapChain(VkPhysicalDevice physicalDevice,
-                            const VkDevice logicalDevice_,
-                            VkSurfaceKHR surface,
-                            int graphicsIndex,
-                            int presentIndex);
-                        SwapChain(SwapChain&& other);
-                        ~SwapChain();
+                                SwapChain(VkPhysicalDevice physicalDevice,
+                                    const VkDevice logicalDevice_,
+                                    VkSurfaceKHR surface,
+                                    int graphicsIndex,
+                                    int presentIndex);
+                                SwapChain(SwapChain&& other);
+                                ~SwapChain();
+
+    VkSurfaceFormatKHR          GetImageFormat() const { return imageFormat; }
+    VkExtent2D                  GetImageExtent() const { return imageExtent; }
 
 
 private:
@@ -35,8 +38,14 @@ private:
 
     void                LoadSurfaceFormat(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface);
     void                LoadPresentMode(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface);
-    void                LoadSwapExent(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, uint32_t width, uint32_t height);
-    void                LoadSwapChain(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, int graphicsIndex, int presentIndex);
+    void                LoadSwapExent(VkPhysicalDevice physicalDevice,
+                                        VkSurfaceKHR surface,
+                                        uint32_t width,
+                                        uint32_t height);
+    void                LoadSwapChain(VkPhysicalDevice physicalDevice,
+                                        VkSurfaceKHR surface,
+                                        int graphicsIndex,
+                                        int presentIndex);
     void                LoadImages();
     void                LoadImageViews();
 

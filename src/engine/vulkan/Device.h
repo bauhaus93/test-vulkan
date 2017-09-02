@@ -25,16 +25,17 @@ public:
                                     Device(Device&& other);
                                     ~Device();
     void                            LoadLogicalDevice();
-    void                            LoadSwapChain(VkSurfaceKHR surface);
+    std::unique_ptr<SwapChain>      CreateSwapChain(VkSurfaceKHR surface);
 
     bool                            SupportsRequiredExtensions() const;
     bool                            QueuesComplete() const;
+
+    VkDevice                        GetLogicalDevice() const { return logicalDevice; }
     std::string                     GetName() const;
 
 private:
     VkPhysicalDevice                physicalDevice;
     VkDevice                        logicalDevice;
-    std::unique_ptr<SwapChain>      swapchain;
 
     Queue                           graphicsQueue;
     Queue                           presentQueue;

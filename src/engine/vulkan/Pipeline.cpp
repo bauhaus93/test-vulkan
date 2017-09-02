@@ -2,7 +2,10 @@
 
 namespace engine::vulkan {
 
-//TODO render passes
+static VkAttachmentDescription CreateAttachmentDescription(VkSurfaceFormatKHR imageFormat);
+static VkAttachmentReference CreateAttachmentReference();
+static VkSubpassDescription CreateSubpassDescription(VkAttachmentReference* attachRef);
+static VkRenderPassCreateInfo CreateRenderPassInfo(VkAttachmentDescription* attachDescr, VkSubpassDescription* subpassDescr);
 static VkPipelineShaderStageCreateInfo CreateVertexShaderStageInfo(VkShaderModule module);
 static VkPipelineShaderStageCreateInfo CreateFragmentShaderStageInfo(VkShaderModule module);
 static VkPipelineVertexInputStateCreateInfo CreateVertexInputStateInfo();
@@ -13,15 +16,32 @@ static VkPipelineViewportStateCreateInfo CreateViewportStateInfo(VkViewport* vie
 static VkPipelineRasterizationStateCreateInfo CreateRasterizerStateInfo();
 static VkPipelineMultisampleStateCreateInfo CreateMultisampleStateInfo();
 static VkPipelineColorBlendAttachmentState CreateColorBlendAttachInfo();
-static VkPipelineColorBlendStateCreateInfo CrateColorBlendStateInfo(VkPipelineColorBlendAttachmentState* attachInfo);
-static VkPipelineDynamicStateCreateInfo CreateDynamicStateInfo(VkDynamicState* dynamicStates, size_t dsCount);
+static VkPipelineColorBlendStateCreateInfo CreateColorBlendStateInfo(VkPipelineColorBlendAttachmentState* attachInfo);
+//static VkPipelineDynamicStateCreateInfo CreateDynamicStateInfo(VkDynamicState* dynamicStates, size_t dsCount);
 static VkPipelineLayoutCreateInfo CreatePipelineLayoutInfo();
+static VkGraphicsPipelineCreateInfo CreatePipelineInfo(VkPipelineShaderStageCreateInfo* shaderStageInfos,
+    VkPipelineVertexInputStateCreateInfo* vertexInputInfo,
+    VkPipelineInputAssemblyStateCreateInfo* inputAssemblyInfo,
+    VkPipelineViewportStateCreateInfo* viewportStateInfo,
+    VkPipelineRasterizationStateCreateInfo* rasterStateInfo,
+    VkPipelineMultisampleStateCreateInfo* multisampleStateInfo,
+    VkPipelineColorBlendStateCreateInfo* blendStateInfo,
+    VkPipelineLayout layout,
+    VkRenderPass renderPass);
 
-Pipeline::Pipeline(const VkDevice device_, VkExtent2D swapChainExtent):
+Pipeline::Pipeline(const VkDevice device_, VkExtent2D swapChainExtent, VkSurfaceFormatKHR swapChainFormat):
     device { device_ },
+    renderPass { VK_NULL_HANDLE },
     layout { VK_NULL_HANDLE },
+    pipeline { VK_NULL_HANDLE },
     vertexShader { device, "vert.spv" },
     fragmentShader { device, "frag.spv" } {
+
+    VkAttachmentDescription attachDescr { CreateAttachmentDescription(swapChainFormat) };
+    VkAttachmentReference attachRef { CreateAttachmentReference() };
+    VkSubpassDescription subpassDescr { CreateSubpassDescription(&attachRef) };
+
+    LoadRenderPass(&attachDescr, &subpassDescr);
 
     VkPipelineShaderStageCreateInfo vertShaderStageInfo { CreateVertexShaderStageInfo(vertexShader.GetModule()) };
     VkPipelineShaderStageCreateInfo fragShaderStageInfo { CreateFragmentShaderStageInfo(fragmentShader.GetModule()) };
@@ -33,21 +53,106 @@ Pipeline::Pipeline(const VkDevice device_, VkExtent2D swapChainExtent):
     VkPipelineRasterizationStateCreateInfo rasterInfo { CreateRasterizerStateInfo() };
     VkPipelineMultisampleStateCreateInfo multisampleInfo { CreateMultisampleStateInfo() };
     VkPipelineColorBlendAttachmentState blendAttachInfo { CreateColorBlendAttachInfo() };
-    VkPipelineColorBlendStateCreateInfo blendInfo { CrateColorBlendStateInfo(&blendAttachInfo) };
-    VkPipelineDynamicStateCreateInfo dynamicStateInfo { CreateDynamicStateInfo(nullptr, 0) };
+    VkPipelineColorBlendStateCreateInfo blendInfo { CreateColorBlendStateInfo(&blendAttachInfo) };
+    //VkPipelineDynamicStateCreateInfo dynamicStateInfo { CreateDynamicStateInfo(nullptr, 0) };
     VkPipelineLayoutCreateInfo pipelineLayoutInfo { CreatePipelineLayoutInfo() };
 
     if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &layout) != VK_SUCCESS) {
         throw std::runtime_error("Could not create pipeline layout");
     }
+    VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
+    VkGraphicsPipelineCreateInfo pipelineInfo { CreatePipelineInfo(
+        shaderStages,
+        &vertInputInfo,
+        &inputAssemblyInfo,
+        &viewportInfo,
+        &rasterInfo,
+        &multisampleInfo,
+        &blendInfo,
+        layout,
+        renderPass) };
+
+    if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline) != VK_SUCCESS) {
+        throw std::runtime_error("Could not create graphics pipeline");
+    }
+    INFO("Created graphics pipeline");
 
 }
 
 Pipeline::~Pipeline() {
+
+    if (pipeline != VK_NULL_HANDLE) {
+        vkDestroyPipeline(device, pipeline, nullptr);
+        INFO("Destroyed graphics pipeline");
+    }
+
     if (layout != VK_NULL_HANDLE) {
         vkDestroyPipelineLayout(device, layout, nullptr);
     }
+
+    if (renderPass != VK_NULL_HANDLE) {
+        vkDestroyRenderPass(device, renderPass, nullptr);
+    }
+
 }
+
+void Pipeline::LoadRenderPass(VkAttachmentDescription* attachDescr, VkSubpassDescription* subpassDescr) {
+    VkRenderPassCreateInfo createInfo { CreateRenderPassInfo(attachDescr, subpassDescr) };
+
+    if (vkCreateRenderPass(device, &createInfo, nullptr, &renderPass) != VK_SUCCESS) {
+        throw std::runtime_error("Could not create render pass");
+    }
+}
+
+static VkAttachmentDescription CreateAttachmentDescription(VkSurfaceFormatKHR imageFormat) {
+    VkAttachmentDescription attachDescr {};
+
+    attachDescr.format = imageFormat.format;
+    attachDescr.samples = VK_SAMPLE_COUNT_1_BIT;
+
+    attachDescr.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    attachDescr.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+
+    attachDescr.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    attachDescr.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+
+    attachDescr.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    attachDescr.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+    return attachDescr;
+}
+
+static VkAttachmentReference CreateAttachmentReference() {
+    VkAttachmentReference attachRef {};
+
+    attachRef.attachment = 0;
+    attachRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+    return attachRef;
+}
+
+static VkSubpassDescription CreateSubpassDescription(VkAttachmentReference* attachRef) {
+    VkSubpassDescription subpassDescr {};
+
+    subpassDescr.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpassDescr.colorAttachmentCount = 1;
+    subpassDescr.pColorAttachments = attachRef;
+
+    return subpassDescr;
+}
+
+static VkRenderPassCreateInfo CreateRenderPassInfo(VkAttachmentDescription* attachDescr, VkSubpassDescription* subpassDescr) {
+    VkRenderPassCreateInfo createInfo {};
+
+    createInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+    createInfo.attachmentCount = 1;
+    createInfo.pAttachments = attachDescr;
+    createInfo.subpassCount = 1;
+    createInfo.pSubpasses = subpassDescr;
+
+    return createInfo;
+}
+
 
 static VkPipelineShaderStageCreateInfo CreateVertexShaderStageInfo(VkShaderModule module) {
     VkPipelineShaderStageCreateInfo createInfo {};
@@ -179,7 +284,7 @@ static VkPipelineColorBlendAttachmentState CreateColorBlendAttachInfo() {
     return colorBlend;
 }
 
-static VkPipelineColorBlendStateCreateInfo CrateColorBlendStateInfo(VkPipelineColorBlendAttachmentState* attachInfo) {
+static VkPipelineColorBlendStateCreateInfo CreateColorBlendStateInfo(VkPipelineColorBlendAttachmentState* attachInfo) {
     VkPipelineColorBlendStateCreateInfo createInfo {};
 
     createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
@@ -195,7 +300,7 @@ static VkPipelineColorBlendStateCreateInfo CrateColorBlendStateInfo(VkPipelineCo
     return createInfo;
 }
 
-static VkPipelineDynamicStateCreateInfo CreateDynamicStateInfo(VkDynamicState* dynamicStates, size_t dsCount) {
+/*static VkPipelineDynamicStateCreateInfo CreateDynamicStateInfo(VkDynamicState* dynamicStates, size_t dsCount) {
     VkPipelineDynamicStateCreateInfo createInfo {};
 
     createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
@@ -203,7 +308,7 @@ static VkPipelineDynamicStateCreateInfo CreateDynamicStateInfo(VkDynamicState* d
     createInfo.pDynamicStates = dynamicStates;
 
     return createInfo;
-}
+}*/
 
 static VkPipelineLayoutCreateInfo CreatePipelineLayoutInfo() {
     VkPipelineLayoutCreateInfo createInfo {};
@@ -213,6 +318,40 @@ static VkPipelineLayoutCreateInfo CreatePipelineLayoutInfo() {
     createInfo.pSetLayouts = nullptr;
     createInfo.pushConstantRangeCount = 0;
     createInfo.pPushConstantRanges = nullptr;
+
+    return createInfo;
+}
+
+static VkGraphicsPipelineCreateInfo CreatePipelineInfo(VkPipelineShaderStageCreateInfo* shaderStageInfos,
+    VkPipelineVertexInputStateCreateInfo* vertexInputInfo,
+    VkPipelineInputAssemblyStateCreateInfo* inputAssemblyInfo,
+    VkPipelineViewportStateCreateInfo* viewportStateInfo,
+    VkPipelineRasterizationStateCreateInfo* rasterStateInfo,
+    VkPipelineMultisampleStateCreateInfo* multisampleStateInfo,
+    VkPipelineColorBlendStateCreateInfo* blendStateInfo,
+    VkPipelineLayout layout,
+    VkRenderPass renderPass) {
+
+    VkGraphicsPipelineCreateInfo createInfo {};
+
+    createInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    createInfo.stageCount = 2;
+    createInfo.pStages = shaderStageInfos;
+    createInfo.pVertexInputState = vertexInputInfo;
+    createInfo.pInputAssemblyState = inputAssemblyInfo;
+    createInfo.pViewportState = viewportStateInfo;
+    createInfo.pRasterizationState = rasterStateInfo;
+    createInfo.pMultisampleState = multisampleStateInfo;
+    createInfo.pDepthStencilState = nullptr;
+    createInfo.pColorBlendState = blendStateInfo;
+    createInfo.pDynamicState = nullptr;
+
+    createInfo.layout = layout;
+    createInfo.renderPass = renderPass;
+    createInfo.subpass = 0;
+
+    createInfo.basePipelineHandle = VK_NULL_HANDLE;
+    createInfo.basePipelineIndex = -1;
 
     return createInfo;
 }

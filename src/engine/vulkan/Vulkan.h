@@ -12,6 +12,7 @@
 #include "initialization/Extension.h"
 
 #include "Device.h"
+#include "Pipeline.h"
 
 namespace engine::vulkan {
 
@@ -23,17 +24,20 @@ public:
 
 private:
 
-    void                        CreateInstance();
+    void                        LoadInstance();
     void                        SetupDebugCallback();
-    void                        CreateSurface(GLFWwindow* window);
-    void                        ChooseDevice();
+    void                        LoadSurface(GLFWwindow* window);
+    void                        LoadDevice();
+    void                        LoadSwapChain();
+    void                        LoadPipeline();
 
     VkInstance                  instance;
     VkDebugReportCallbackEXT    debugCallback;
     VkSurfaceKHR                surface;
 
     std::unique_ptr<Device>     device;
-
+    std::unique_ptr<SwapChain>  swapchain;
+    std::unique_ptr<Pipeline>   pipeline;
 };
 
 
