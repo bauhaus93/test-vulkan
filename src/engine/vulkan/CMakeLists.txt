@@ -3,6 +3,8 @@ add_sources(
   Device.cpp
   SwapChain.cpp
   Queue.cpp
+  Shader.cpp
+  Pipeline.cpp
 )
 
 add_subdirectory(initialization)
