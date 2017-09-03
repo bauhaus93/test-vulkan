@@ -42,7 +42,7 @@ void CommandPool::LoadCommandBuffers(const SwapChain& swapchain) {
     if (vkAllocateCommandBuffers(device, &allocInfo, buffers.data()) != VK_SUCCESS) {
         throw std::runtime_error("Could not create command buffers");
     }
-    INFO("Created command buffers");
+    DEBUG("Created command buffers");
 }
 
 void CommandPool::RecordCommand(const SwapChain& swapchain, const Pipeline& pipeline) {

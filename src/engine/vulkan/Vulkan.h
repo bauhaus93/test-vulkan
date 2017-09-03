@@ -24,6 +24,8 @@ public:
     explicit                        Vulkan(GLFWwindow* window);
                                     ~Vulkan();
 
+    void                            DrawFrame();
+
 private:
 
     void                            LoadInstance();
@@ -34,10 +36,13 @@ private:
     void                            LoadPipeline();
     void                            LoadFramebuffers();
     void                            LoadCommandPools();
+    void                            LoadSemaphores();
 
     VkInstance                      instance;
     VkDebugReportCallbackEXT        debugCallback;
     VkSurfaceKHR                    surface;
+    VkSemaphore                     imgAvailableSem;
+    VkSemaphore                     renderFinishedSem;
 
     std::unique_ptr<Device>         device;
     std::unique_ptr<SwapChain>      swapchain;

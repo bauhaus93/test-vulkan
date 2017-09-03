@@ -15,6 +15,7 @@ public:
     void            SetIndex(int index_) { index = index_; }
     void            SetQueue(VkQueue queue_) { queue = queue_; }
     int             GetIndex() const { return index; }
+    VkQueue         GetQueue() const { return queue; }
 
 private:
 

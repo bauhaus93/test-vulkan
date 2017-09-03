@@ -18,6 +18,7 @@ public:
                             ~CommandPool();
     void                    LoadCommandBuffers(const SwapChain& swapchain);
     void                    RecordCommand(const SwapChain& swapchain, const Pipeline& pipeline);
+    VkCommandBuffer*        GetCommandBufferPtr(size_t index) { return buffers.data() + index; }
 
 private:
 

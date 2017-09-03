@@ -32,6 +32,7 @@ public:
 
     VkDevice                        GetLogicalDevice() const { return logicalDevice; }
     const Queue&                    GetGraphicsQueue() const { return graphicsQueue; }
+    const Queue&                    GetPresentQueue() const { return presentQueue; }
     std::string                     GetName() const;
 
 private:

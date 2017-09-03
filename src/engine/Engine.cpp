@@ -18,5 +18,9 @@ bool Engine::ShouldQuit() {
     return glfw.ShouldCloseWindow();
 }
 
+void Engine::DrawFrame() {
+    vulkan.DrawFrame();
+}
+
 
 }

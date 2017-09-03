@@ -14,6 +14,7 @@ void TestApp::Run() {
 
 void TestApp::Mainloop() {
     while (!engine.ShouldQuit()) {
+        engine.DrawFrame();
         engine.HandleEvents();
     }
 }

@@ -13,6 +13,7 @@ public:
 
     void                HandleEvents();
     bool                ShouldQuit();
+    void                DrawFrame();
 
 
 private:

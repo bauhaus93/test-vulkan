@@ -27,6 +27,7 @@ public:
     VkExtent2D                  GetImageExtent() const { return imageExtent; }
     size_t                      GetFramebufferCount() const { return framebuffers.size(); }
     VkFramebuffer               GetFramebuffer(size_t index) const { return framebuffers[index]; }
+    VkSwapchainKHR              GetSwapChain() const { return swapChain; };
 
 
 private:

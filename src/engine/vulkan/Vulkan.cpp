@@ -18,6 +18,10 @@ VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
 }
 
 Vulkan::Vulkan(GLFWwindow* window):
+    instance { VK_NULL_HANDLE },
+    surface { VK_NULL_HANDLE },
+    imgAvailableSem { VK_NULL_HANDLE },
+    renderFinishedSem { VK_NULL_HANDLE },
     device { nullptr },
     pipeline { nullptr }{
 
@@ -33,9 +37,14 @@ Vulkan::Vulkan(GLFWwindow* window):
     LoadPipeline();
     LoadFramebuffers();
     LoadCommandPools();
+    LoadSemaphores();
 }
 
 Vulkan::~Vulkan() {
+    vkDeviceWaitIdle(device->GetLogicalDevice());
+
+    vkDestroySemaphore(device->GetLogicalDevice(), renderFinishedSem, nullptr);
+    vkDestroySemaphore(device->GetLogicalDevice(), imgAvailableSem, nullptr);
     commandPool = nullptr;
     pipeline = nullptr;
     swapchain = nullptr;
@@ -44,6 +53,50 @@ Vulkan::~Vulkan() {
     DestroyDebugReportCallbackEXT(instance, debugCallback, nullptr);
     vkDestroyInstance(instance, nullptr);
     INFO("Destroyed vulkan");
+}
+
+void Vulkan::DrawFrame() {
+    vkQueueWaitIdle(device->GetPresentQueue().GetQueue());
+
+    uint32_t imgIndex;
+    vkAcquireNextImageKHR(device->GetLogicalDevice(),
+        swapchain->GetSwapChain(),
+        std::numeric_limits<uint64_t>::max(),
+        imgAvailableSem,
+        VK_NULL_HANDLE,
+        &imgIndex);
+
+    VkSubmitInfo submitInfo {};
+
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    VkSemaphore waitSemaphores[] = { imgAvailableSem };
+    VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+    submitInfo.waitSemaphoreCount = 1;
+    submitInfo.pWaitSemaphores = waitSemaphores;
+    submitInfo.pWaitDstStageMask = waitStages;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = commandPool->GetCommandBufferPtr(imgIndex);
+
+    VkSemaphore signalSemaphores[] = { renderFinishedSem };
+    submitInfo.signalSemaphoreCount = 1;
+    submitInfo.pSignalSemaphores = signalSemaphores;
+
+    if (vkQueueSubmit(device->GetGraphicsQueue().GetQueue(), 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS) {
+        throw std::runtime_error("Could not submit draw command");
+    }
+
+    VkPresentInfoKHR presentInfo = {};
+    presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+    presentInfo.waitSemaphoreCount = 1;
+    presentInfo.pWaitSemaphores = signalSemaphores;
+
+    VkSwapchainKHR swapChains[] = { swapchain->GetSwapChain() };
+    presentInfo.swapchainCount = 1;
+    presentInfo.pSwapchains = swapChains;
+    presentInfo.pImageIndices = &imgIndex;
+    presentInfo.pResults = nullptr;
+
+    vkQueuePresentKHR(device->GetPresentQueue().GetQueue(), &presentInfo);
 }
 
 void Vulkan::LoadInstance() {
@@ -136,7 +189,23 @@ void Vulkan::LoadFramebuffers() {
 void Vulkan::LoadCommandPools() {
     DEBUG("Load command pools");
     commandPool = std::make_unique<CommandPool>(device->GetLogicalDevice(), device->GetGraphicsQueue());
+    commandPool->LoadCommandBuffers(*swapchain);
     commandPool->RecordCommand(*swapchain, *pipeline);
+}
+
+void Vulkan::LoadSemaphores() {
+    DEBUG("Load semaphores");
+    VkSemaphoreCreateInfo createInfo {};
+
+    createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+    if (vkCreateSemaphore(device->GetLogicalDevice(), &createInfo, nullptr, &imgAvailableSem) != VK_SUCCESS) {
+        throw std::runtime_error("Could not create img available semaphore");
+    }
+
+    if (vkCreateSemaphore(device->GetLogicalDevice(), &createInfo, nullptr, &renderFinishedSem) != VK_SUCCESS) {
+        throw std::runtime_error("Could not create render finished semaphore");
+    }
 }
 
 

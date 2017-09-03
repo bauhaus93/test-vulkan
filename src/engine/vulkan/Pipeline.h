@@ -29,7 +29,7 @@ private:
 
 
 
-    void                    LoadRenderPass(VkAttachmentDescription* attachDescr, VkSubpassDescription* subpassDescr);
+    void                    LoadRenderPass(VkAttachmentDescription* attachDescr, VkSubpassDescription* subpassDescr, VkSubpassDependency* subpassDependency);
     void                    LoadLayout();
 
 

@@ -5,7 +5,8 @@ namespace engine::vulkan {
 static VkAttachmentDescription CreateAttachmentDescription(VkSurfaceFormatKHR imageFormat);
 static VkAttachmentReference CreateAttachmentReference();
 static VkSubpassDescription CreateSubpassDescription(VkAttachmentReference* attachRef);
-static VkRenderPassCreateInfo CreateRenderPassInfo(VkAttachmentDescription* attachDescr, VkSubpassDescription* subpassDescr);
+static VkSubpassDependency CreateSubpassDependency();
+static VkRenderPassCreateInfo CreateRenderPassInfo(VkAttachmentDescription* attachDescr, VkSubpassDescription* subpassDescr, VkSubpassDependency* dependency);
 static VkPipelineShaderStageCreateInfo CreateVertexShaderStageInfo(VkShaderModule module);
 static VkPipelineShaderStageCreateInfo CreateFragmentShaderStageInfo(VkShaderModule module);
 static VkPipelineVertexInputStateCreateInfo CreateVertexInputStateInfo();
@@ -40,8 +41,9 @@ Pipeline::Pipeline(const VkDevice device_, VkExtent2D swapChainExtent, VkSurface
     VkAttachmentDescription attachDescr { CreateAttachmentDescription(swapChainFormat) };
     VkAttachmentReference attachRef { CreateAttachmentReference() };
     VkSubpassDescription subpassDescr { CreateSubpassDescription(&attachRef) };
+    VkSubpassDependency subpassDependency { CreateSubpassDependency() };
 
-    LoadRenderPass(&attachDescr, &subpassDescr);
+    LoadRenderPass(&attachDescr, &subpassDescr, &subpassDependency);
 
     VkPipelineShaderStageCreateInfo vertShaderStageInfo { CreateVertexShaderStageInfo(vertexShader.GetModule()) };
     VkPipelineShaderStageCreateInfo fragShaderStageInfo { CreateFragmentShaderStageInfo(fragmentShader.GetModule()) };
@@ -96,8 +98,8 @@ Pipeline::~Pipeline() {
 
 }
 
-void Pipeline::LoadRenderPass(VkAttachmentDescription* attachDescr, VkSubpassDescription* subpassDescr) {
-    VkRenderPassCreateInfo createInfo { CreateRenderPassInfo(attachDescr, subpassDescr) };
+void Pipeline::LoadRenderPass(VkAttachmentDescription* attachDescr, VkSubpassDescription* subpassDescr, VkSubpassDependency* subpassDependency) {
+    VkRenderPassCreateInfo createInfo { CreateRenderPassInfo(attachDescr, subpassDescr, subpassDependency) };
 
     if (vkCreateRenderPass(device, &createInfo, nullptr, &renderPass) != VK_SUCCESS) {
         throw std::runtime_error("Could not create render pass");
@@ -141,7 +143,21 @@ static VkSubpassDescription CreateSubpassDescription(VkAttachmentReference* atta
     return subpassDescr;
 }
 
-static VkRenderPassCreateInfo CreateRenderPassInfo(VkAttachmentDescription* attachDescr, VkSubpassDescription* subpassDescr) {
+static VkSubpassDependency CreateSubpassDependency() {
+    VkSubpassDependency dependency {};
+
+    dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+    dependency.dstSubpass = 0;
+    dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency.srcAccessMask = 0;
+    dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+    return dependency;
+}
+
+
+static VkRenderPassCreateInfo CreateRenderPassInfo(VkAttachmentDescription* attachDescr, VkSubpassDescription* subpassDescr, VkSubpassDependency* dependency) {
     VkRenderPassCreateInfo createInfo {};
 
     createInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -149,6 +165,8 @@ static VkRenderPassCreateInfo CreateRenderPassInfo(VkAttachmentDescription* atta
     createInfo.pAttachments = attachDescr;
     createInfo.subpassCount = 1;
     createInfo.pSubpasses = subpassDescr;
+    createInfo.dependencyCount = 1;
+    createInfo.pDependencies = dependency;
 
     return createInfo;
 }
