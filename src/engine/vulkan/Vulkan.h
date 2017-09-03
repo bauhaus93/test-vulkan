@@ -12,32 +12,37 @@
 #include "initialization/Extension.h"
 
 #include "Device.h"
+#include "SwapChain.h"
 #include "Pipeline.h"
+#include "CommandPool.h"
 
 namespace engine::vulkan {
 
 class Vulkan {
 
 public:
-    explicit                    Vulkan(GLFWwindow* window);
-                                ~Vulkan();
+    explicit                        Vulkan(GLFWwindow* window);
+                                    ~Vulkan();
 
 private:
 
-    void                        LoadInstance();
-    void                        SetupDebugCallback();
-    void                        LoadSurface(GLFWwindow* window);
-    void                        LoadDevice();
-    void                        LoadSwapChain();
-    void                        LoadPipeline();
+    void                            LoadInstance();
+    void                            SetupDebugCallback();
+    void                            LoadSurface(GLFWwindow* window);
+    void                            LoadDevice();
+    void                            LoadSwapChain();
+    void                            LoadPipeline();
+    void                            LoadFramebuffers();
+    void                            LoadCommandPools();
 
-    VkInstance                  instance;
-    VkDebugReportCallbackEXT    debugCallback;
-    VkSurfaceKHR                surface;
+    VkInstance                      instance;
+    VkDebugReportCallbackEXT        debugCallback;
+    VkSurfaceKHR                    surface;
 
-    std::unique_ptr<Device>     device;
-    std::unique_ptr<SwapChain>  swapchain;
-    std::unique_ptr<Pipeline>   pipeline;
+    std::unique_ptr<Device>         device;
+    std::unique_ptr<SwapChain>      swapchain;
+    std::unique_ptr<Pipeline>       pipeline;
+    std::unique_ptr<CommandPool>    commandPool;
 };
 
 

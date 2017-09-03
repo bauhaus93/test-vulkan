@@ -31,9 +31,12 @@ Vulkan::Vulkan(GLFWwindow* window):
     LoadDevice();
     LoadSwapChain();
     LoadPipeline();
+    LoadFramebuffers();
+    LoadCommandPools();
 }
 
 Vulkan::~Vulkan() {
+    commandPool = nullptr;
     pipeline = nullptr;
     swapchain = nullptr;
     device = nullptr;
@@ -44,6 +47,7 @@ Vulkan::~Vulkan() {
 }
 
 void Vulkan::LoadInstance() {
+    DEBUG("Load instance");
     VkApplicationInfo appInfo {};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     appInfo.pApplicationName = "Test-Vulkan";
@@ -74,6 +78,7 @@ void Vulkan::LoadInstance() {
 }
 
 void Vulkan::SetupDebugCallback() {
+    DEBUG("Setup debug callback");
     if (enableValidationLayers) {
         VkDebugReportCallbackCreateInfoEXT createInfo {};
         createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
@@ -88,12 +93,14 @@ void Vulkan::SetupDebugCallback() {
 }
 
 void Vulkan::LoadSurface(GLFWwindow* window) {
+    DEBUG("Load surface");
     if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS) {
         throw std::runtime_error("Could not create window surface");
     }
 }
 
 void Vulkan::LoadDevice() {
+    DEBUG("Load device");
     auto devices = GetDevices(instance, surface);
 
     for (auto& currDev: devices) {
@@ -110,13 +117,26 @@ void Vulkan::LoadDevice() {
 }
 
 void Vulkan::LoadSwapChain() {
+    DEBUG("Load swapchain");
     swapchain = device->CreateSwapChain(surface);
 }
 
 void Vulkan::LoadPipeline() {
+    DEBUG("Load pipeline");
     pipeline = std::make_unique<Pipeline>(device->GetLogicalDevice(),
         swapchain->GetImageExtent(),
         swapchain->GetImageFormat());
+}
+
+void Vulkan::LoadFramebuffers() {
+    DEBUG("Load framebuffers");
+    swapchain->LoadFramebuffers(pipeline->GetRenderPass());
+}
+
+void Vulkan::LoadCommandPools() {
+    DEBUG("Load command pools");
+    commandPool = std::make_unique<CommandPool>(device->GetLogicalDevice(), device->GetGraphicsQueue());
+    commandPool->RecordCommand(*swapchain, *pipeline);
 }
 
 

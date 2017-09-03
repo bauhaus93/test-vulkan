@@ -15,6 +15,8 @@ public:
                                 VkExtent2D swapChainExtent,
                                 VkSurfaceFormatKHR swapChainFormat);
                             ~Pipeline();
+    VkRenderPass            GetRenderPass() const { return renderPass; }
+    VkPipeline              GetPipeline() const { return pipeline; }
 
 private:
     const VkDevice          device;

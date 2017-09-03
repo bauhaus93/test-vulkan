@@ -5,6 +5,7 @@ add_sources(
   Queue.cpp
   Shader.cpp
   Pipeline.cpp
+  CommandPool.cpp
 )
 
 add_subdirectory(initialization)

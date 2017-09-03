@@ -29,6 +29,10 @@ SwapChain::SwapChain(SwapChain&& other):
 
 SwapChain::~SwapChain() {
 
+    for(auto framebuffer: framebuffers) {
+        vkDestroyFramebuffer(logicalDevice, framebuffer, nullptr);
+    }
+
     for(auto imageView: imageViews) {
         vkDestroyImageView(logicalDevice, imageView, nullptr);
     }
@@ -178,10 +182,26 @@ void SwapChain::LoadImageViews() {
             throw std::runtime_error("Could not create image view");
         }
         imageViews.push_back(imageView);
-
     }
+}
 
+void SwapChain::LoadFramebuffers(VkRenderPass renderPass) {
+    framebuffers.resize(imageViews.size());
 
+    for (size_t i = 0; i < framebuffers.size(); i++) {
+        VkFramebufferCreateInfo createInfo {};
+        createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        createInfo.renderPass = renderPass;
+        createInfo.attachmentCount = 1;
+        createInfo.pAttachments = &imageViews[i];
+        createInfo.width = imageExtent.width;
+        createInfo.height = imageExtent.height;
+        createInfo.layers = 1;
+
+        if (vkCreateFramebuffer(logicalDevice, &createInfo, nullptr, &framebuffers[i]) != VK_SUCCESS) {
+            throw std::runtime_error("Could not create framebuffer");
+        }
+    }
 }
 
 }

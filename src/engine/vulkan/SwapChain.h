@@ -21,8 +21,12 @@ public:
                                 SwapChain(SwapChain&& other);
                                 ~SwapChain();
 
+    void                        LoadFramebuffers(VkRenderPass renderPass);
+
     VkSurfaceFormatKHR          GetImageFormat() const { return imageFormat; }
     VkExtent2D                  GetImageExtent() const { return imageExtent; }
+    size_t                      GetFramebufferCount() const { return framebuffers.size(); }
+    VkFramebuffer               GetFramebuffer(size_t index) const { return framebuffers[index]; }
 
 
 private:
@@ -34,6 +38,7 @@ private:
 
     std::vector<VkImage>        images;
     std::vector<VkImageView>    imageViews;
+    std::vector<VkFramebuffer>  framebuffers;
 
 
     void                LoadSurfaceFormat(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface);

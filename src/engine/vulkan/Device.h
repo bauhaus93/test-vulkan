@@ -31,6 +31,7 @@ public:
     bool                            QueuesComplete() const;
 
     VkDevice                        GetLogicalDevice() const { return logicalDevice; }
+    const Queue&                    GetGraphicsQueue() const { return graphicsQueue; }
     std::string                     GetName() const;
 
 private:
